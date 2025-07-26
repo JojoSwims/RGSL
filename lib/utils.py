@@ -159,3 +159,42 @@ def cheb_polynomial(L_tilde, K):
         cheb_polynomials.append(2 * L_tilde * cheb_polynomials[i - 1] - cheb_polynomials[i - 2])
 
     return cheb_polynomials
+
+
+def adjacency_to_triplets(adj):
+    """Convert a dense adjacency matrix to edge triplets.
+
+    Parameters
+    ----------
+    adj : np.ndarray
+        Square ``N x N`` adjacency matrix. Non-zero values represent edge
+        weights.
+
+    Returns
+    -------
+    np.ndarray
+        Array with shape ``(E, 3)`` where each row is ``[from, to, cost]``.
+    """
+    if adj.ndim != 2 or adj.shape[0] != adj.shape[1]:
+        raise ValueError("adj must be a square matrix")
+
+    triplets = []
+    n = adj.shape[0]
+    for i in range(n):
+        for j in range(n):
+            cost = adj[i, j]
+            if cost != 0:
+                triplets.append([i, j, float(cost)])
+    return np.asarray(triplets, dtype=float)
+
+
+def save_triplets_csv(adj, csv_path):
+    """Save ``adj`` as a CSV with ``from,to,cost`` columns."""
+    import csv
+
+    triplets = adjacency_to_triplets(adj)
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["from", "to", "cost"])
+        writer.writerows(triplets)
+

@@ -1,71 +1,73 @@
-# RGSL (IJCAI22 paper)
-Hongyuan Yu, Ting Li, Weichen Yu, "Regularized Graph Structure Learning with Explicit and Implicit Knowledge for Multi-variates Time-Series Forecasting" in Proc. 31st International Joint Conference on Artificial Intelligence (IJCAI-22) Main Track, July 23-29, 2022
+# Regularized Graph Structure Learning (RGSL)
 
-This folder concludes the code and data of our RGSL model:
+This repository is based on the original implementation available at
+<https://github.com/alipay/RGSL> and accompanies the paper:
 
-In this paper, we propose Regularized Graph Structure Learning (RGSL) model to incorporate both explicit prior structure and implicit structure together, and learn the forecasting deep networks along with the graph structure. RGSL consists of two innovative modules. First, we derive an implicit dense similarity matrix through node embedding, and learn the sparse graph structure using the Regularized Graph Generation (RGG) based on the Gumbel Softmax trick. Second, we propose a Laplacian Matrix Mixed-up Module (LM$^3$) to fuse the explicit graph and implicit graph together. We conduct experiments on three real-word datasets. Results show that the proposed RGSL model outperforms existing graph forecasting algorithms with a notable margin, while learning meaningful graph structure simultaneously.
+> Hongyuan Yu, Ting Li, Weichen Yu, Jianguo Li, Yan Huang, Liang Wang and Alex Liu,
+> "Regularized Graph Structure Learning with Explicit and Implicit Knowledge for
+> Multi-variates Time-Series Forecasting," IJCAI 2022.
 
-<div align="center">
-  <img src="demo/framework.png" width="800px" />
-  <!-- <p>cell.</p> -->
-</div>
+The goal of this fork is to make RGSL easier to apply to your own
+time-series datasets.
 
-## Structure:
+## Preparing Data
 
-* data: including PEMSD4 and PEMSD8 dataset used in our experiments.
+RGSL expects two files for a dataset:
 
-* lib: contains self-defined modules for our work, such as data loading, data pre-process, normalization, and evaluate metrics.
+1. **Node features** – a `numpy` archive (`.npz`) containing one key named
+   `data`. Its value should be an array of shape `(T, N, F)` where `T` is the
+   sequence length, `N` the number of nodes and `F` the number of features per
+   node.
+2. **Adjacency matrix** – a CSV file describing graph connections with three
+   columns `from`, `to` and `cost`. Each row denotes a directed edge from node
+   `from` to node `to` with weight `cost`.
 
-* model: implementation of our RGSL model
+Example adjacency file:
 
+```csv
+from,to,cost
+0,1,1.0
+1,2,0.5
+```
 
-## Get Started
+A helper function `save_triplets_csv` is available in
+`lib/utils.py` for converting a dense `N x N` adjacency matrix into this format.
 
-1. Install Python 3.6, PyTorch 1.9.0.
-2. Download data. You can obtain all the six benchmarks from [[Autoformer](https://github.com/thuml/Autoformer)] or [[Informer](https://github.com/zhouhaoyi/Informer2020)].
-3. Train the model `python model/Run.py`.
+## Adapting the Code
 
-## Requirements
+1. **Load your dataset** – edit `load_st_dataset` in `lib/load_dataset.py`
+   to point to your `.npz` file and return the loaded array.
+2. **Create a config** – copy one of the `model/*.conf` files and update:
+   - `num_nodes`: number of graph nodes
+   - `adj_filename`: path to your adjacency CSV
+   - other training parameters if needed
+3. **Run** – execute `python model/Run.py --dataset YOUR_DATASET`.
+   The dataset name should match the case handled inside `load_st_dataset`.
 
-Python 3.6.5, Pytorch 1.1.0, Numpy 1.16.3, argparse and configparser
+## Important Parameters
 
-To replicate the results in PEMSD4 and PEMSD8 datasets, you can run the the codes in the "model" folder directly. If you want to use the model for your own datasets, please load your dataset by revising "load_dataset" in the "lib" folder and remember tuning the learning rate (gradient norm can be used to facilitate the training).
+The configuration files contain the following commonly modified options:
 
+- `lag` – length of input sequence (history window)
+- `horizon` – prediction horizon
+- `batch_size`, `epochs`, `lr_init` – training hyper parameters
+- `cheb_order` – order of Chebyshev polynomials for graph convolution
+
+Each dataset has its own `.conf` file. The filename should follow the pattern
+`<DATASET>_<MODEL>.conf` as in `METRLA_RGSL.conf`.
+
+## Helper Utilities
+
+To convert an existing dense adjacency matrix `A` (numpy array) to the required
+CSV format:
+
+```python
+from lib.utils import save_triplets_csv
+save_triplets_csv(A, 'distance.csv')
+```
+
+This produces a file compatible with `get_adjacency_matrix` used by the model.
 
 ## Citation
 
-If you find this repo useful, please cite our paper. 
-
-```
-@inproceedings{ijcai2022-328,
-  title     = {Regularized Graph Structure Learning with Semantic Knowledge for Multi-variates Time-Series Forecasting},
-  author    = {Yu, Hongyuan and Li, Ting and Yu, Weichen and Li, Jianguo and Huang, Yan and Wang, Liang and Liu, Alex},
-  booktitle = {Proceedings of the Thirty-First International Joint Conference on
-               Artificial Intelligence, {IJCAI-22}},
-  publisher = {International Joint Conferences on Artificial Intelligence Organization},
-  editor    = {Lud De Raedt},
-  pages     = {2362--2368},
-  year      = {2022},
-  month     = {7},
-  note      = {Main Track}
-  doi       = {10.24963/ijcai.2022/328},
-  url       = {https://doi.org/10.24963/ijcai.2022/328},
-}
-```
-
-## Results
-<div align="center">
-  <img src="demo/results.png" width="800px" />
-  <!-- <p>cell.</p> -->
-</div>
-
-
-## Contact
-
-If you have any question or want to use the code, please contact liting6259@gmail.com.
-
-## Acknowledgement
-
-We appreciate the following agcrn github repo for their valuable code base:
-
-https://github.com/LeiBAI/AGCRN.git
+If you use this code, please cite the IJCAI paper mentioned above.
